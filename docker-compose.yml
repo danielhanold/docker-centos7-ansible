@@ -3,6 +3,7 @@ version: "3.9"
 # Services definition.
 services:
   ansible:
+    privileged: true
     build:
       context: .
     volumes:

@@ -1,0 +1,35 @@
+---
+- hosts: all
+  tasks:
+    - import_role:
+        name: elastic-beats
+      vars:
+        # TECH-1897: For scraper consumers, use the insecure URL for Elastic's GPG key
+        # to avoid compatibility issues with Ansible and proxying.
+        elastic_gpg_url: https://packages.elastic.co/GPG-KEY-elasticsearch
+        # TECH-4533: Disable Filebeat setup until we clean up logs for qarch consumers.
+        elastic_filebeat_enabled: true
+        elastic_filebeat_output: logstash
+        elastic_filebeat_prospectors:
+        - type: log
+          enabled: true
+          paths:
+            - /var/log/qarch/qarch-service-scraping-consumer-*.log
+          tags:
+            - "sc.scraper"
+            - "sc.scraper_consumer"
+          multiline.pattern: '^[0-9]{4}-[0-9]{2}-[0-9]{2}'
+          multiline.negate: true
+          multiline.match: after
+        elastic_filebeat_modules:
+        - name: apache
+          config: |
+            - module: apache
+              access:
+                enabled: true
+                var.paths:
+                - "{{ elastic_filebeat_web_hosts_apache2_access_path }}"
+              error:
+                enabled: true
+                var.paths:
+                - "{{ elastic_filebeat_web_hosts_apache2_error_path }}"
